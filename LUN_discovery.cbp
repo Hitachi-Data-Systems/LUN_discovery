@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="LUN_discovery" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="InquireAbout">
+				<Option output="bin/InquireAbout" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-std=c++11" />
+				</Compiler>
+				<Linker>
+					<Add option="-static-libstdc++" />
+				</Linker>
+			</Target>
+			<Target title="InquireAboutHeaders">
+				<Option output="bin/InquireAboutHeaders" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-std=c++11" />
+				</Compiler>
+				<Linker>
+					<Add option="-static-libstdc++" />
+				</Linker>
+			</Target>
+			<Target title="lun2string">
+				<Option output="bin/lun2string" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option use_console_runner="0" />
+				<Compiler>
+					<Add option="-std=c++11" />
+				</Compiler>
+				<Linker>
+					<Add option="-static-libstdc++" />
+				</Linker>
+			</Target>
+		</Build>
+		<VirtualTargets>
+			<Add alias="all" targets="InquireAbout;InquireAboutHeaders;lun2string;" />
+		</VirtualTargets>
+		<Compiler>
+			<Add option="-std=c++11" />
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add directory="include" />
+		</Compiler>
+		<Linker>
+			<Add library="/usr/local/lib/libmpfr.a" />
+		</Linker>
+		<Unit filename="include/Hitachi_RAID_SCSI_Inquiry_format.h">
+			<Option target="InquireAbout" />
+			<Option target="lun2string" />
+		</Unit>
+		<Unit filename="include/LUN_discovery.h">
+			<Option target="InquireAbout" />
+			<Option target="InquireAboutHeaders" />
+		</Unit>
+		<Unit filename="include/printableAndHex.h">
+			<Option target="InquireAbout" />
+			<Option target="lun2string" />
+		</Unit>
+		<Unit filename="src/InquireAbout.cpp">
+			<Option target="InquireAbout" />
+		</Unit>
+		<Unit filename="src/InquireAboutHeaders.cpp">
+			<Option target="InquireAboutHeaders" />
+		</Unit>
+		<Unit filename="src/LUN_discovery.cpp" />
+		<Unit filename="src/lun2string.cpp">
+			<Option target="lun2string" />
+		</Unit>
+		<Unit filename="src/printableAndHex.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
