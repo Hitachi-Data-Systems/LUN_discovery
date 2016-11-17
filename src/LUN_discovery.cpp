@@ -769,7 +769,11 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                     else if (E0_product == std::string("R800"))
                     {
                         HitachiProduct="RAID800";
-                        HDSProduct="VSP G1000";
+                        HDSProduct="VSP G1000/F1500/G1500";
+                        uint32_t RAIDserialnumber = 300000 + (((uint32_t) (vpd_buf[38+9] % 16)) << 16) + (((uint32_t)vpd_buf[38+10]) << 8) + vpd_buf[38+11];
+                        ostringstream o;
+                        o << RAIDserialnumber;
+                        SerialNumber=o.str();
                     }
                     else
                     {

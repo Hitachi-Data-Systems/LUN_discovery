@@ -64,8 +64,8 @@ void display_memory_contents(ostream& o, unsigned char*p, int length, int perlin
 		while (bytes_to_go>0) {
 			if (bytes_to_go > perlinemax) bytes_this_round = perlinemax;
 			else bytes_this_round=bytes_to_go;
-			o << eachlineprefix << "offset 0x" << std::hex << std::setw(4) << std::setfill('0') << current_offset
-			  << std::dec << setw(6) << setfill(' ') << current_offset
+			o << eachlineprefix << "offset 0x" << std::hex << current_offset
+			  << " (" << std::dec << current_offset << ")"
 			  << " \"" << printableAsDot(q, bytes_this_round) << "\" ("
 			  << printAsHex(q, bytes_this_round) << ')' << std::endl;
 			q=q+bytes_this_round;
