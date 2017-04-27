@@ -210,7 +210,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
         openRWgood=false;
         if ((fd = open64(LUNname.c_str(), O_RDONLY + O_LARGEFILE + O_DIRECT)) < 0)
         {
-            errmsg="LUN_discovery::LUN_discovery(,\"" + LUNname + "\") - open O_RDWR failed";
+            errmsg="LUN_discovery::LUN_discovery(,\"" + LUNname + "\") - open O_RDONLY failed";
             constructor_log = constructor_log + errmsg + '\n';
             openRWgood=false;
             openROgood=false;
