@@ -44,6 +44,7 @@ using namespace std;
 #define PRODUCTDISKSUBSYSTEM "DISK-SUBSYSTEM  "
 #define PRODUCTOPENVCM "OPEN-V-CM       "
 #define PRODUCTOPENV "OPEN-V          "
+#define PRODUCTOPENVA "OPEN-V-A        "
 #define CMD_DEV "cmd dev"
 
 #define REVISION 32
@@ -59,9 +60,42 @@ using namespace std;
 #include "printableAndHex.h"
 #include "LUN_discovery.h"
 
+uint16_t load_16bit(const unsigned char* p)
+{
+    uint16_t r = 0;
+    for (unsigned int i=0; i<2; i++)
+    {
+        r = r << 8;
+        r += ((uint16_t) (*p++));
+    }
+    return r;
+}
+
+uint32_t load_32bit(const unsigned char* p)
+{
+    uint32_t r = 0;
+    for (unsigned int i=0; i<4; i++)
+    {
+        r = r << 8;
+        r += ((uint32_t) (*p++));
+    }
+    return r;
+}
+
+uint64_t load_64bit(const unsigned char* p)
+{
+    uint64_t r = 0;
+    for (unsigned int i=0; i<8; i++)
+    {
+        r = r << 8;
+        r += ((uint64_t) (*p++));
+    }
+    return r;
+}
 
 //#define DEBUG ON
 
+std::string decode_hex_serial_number(const unsigned char* p);
 
 void LUN_discovery::printheaders(ostream& o)
 {
@@ -70,9 +104,23 @@ void LUN_discovery::printheaders(ostream& o)
 
 std::string LUN_discovery::printheaders()
 {
-    return std::string("hostname,SCSI Bus Number (HBA),LUN Name,Hitachi Product,HDS Product,Serial Number,Port,LUN 0-255,LDEV,Nickname,LDEV type,RAID level,Parity Group,Pool ID,CLPR,Max LBA")
+    return std::string("hostname,SCSI Bus Number (HBA),LUN Name,Hitachi Product,HDS Product,Product Revision,Serial Number,Port,LUN 0-255,LDEV,Nickname,LDEV type")
+           + std::string(",notes")
+           + std::string(",RAID level,Parity Group,Pool ID,CLPR,Max LBA")
            + std::string(",Size MB,Size MiB,Size GB,Size GiB,Size TB,Size TiB")
-           + std::string(",Vendor,Product,Product Revision,SCSI_IOCTL_PROBE_HOST");
+           + std::string(",Vendor,Product,Product Revision,port_wwn,node_wwn,protect")
+           + std::string(",SSID,CU,consistency_group")
+           + std::string(",TC")
+           + std::string(",MRCF_M0,MRCF_M1,MRCF_M2")
+           + std::string(",HORC_M0,HORC_M1,HORC_M2,HORC_M3")
+           + std::string(",HUVM_role,physical_product,physical_product_revision,physical_product_ID,physical_submodel,physical_serial,physical_LDEV,physical_LDEV_type"
+            ",physical_PG,physical_RAID_level, physical_Pool_ID,physical_nickname,physical_SSID,physical_CU,physical_consistency_group"
+            ",GAD_remote_serial,GAD_remote_LDEV"
+            ",write_same,page_size_sectors,zero_reclaim_starting_sector"
+            ",pages_in_use,pool_threshold,available_threshold"
+            ",pool_usage,pool_remaining_MiB,total_pool_MiB,optimal_write_same_granularity_sectors"
+            ",physical_pool_usage,pool_saving_rate,pool_physical_remaining_MiB,pool_total_physical_MiB")
+           + std::string(",SCSI_IOCTL_PROBE_HOST");
 }
 
 void LUN_discovery::printdata(ostream& o)
@@ -83,14 +131,55 @@ void LUN_discovery::printdata(ostream& o)
 std::string LUN_discovery::printdata()
 {
     ostringstream os;
-    os << hostname << ',' << bus_number << ',' << LUNname << ',' << HitachiProduct << ',' << HDSProduct << ',' << SerialNumber
-       << ',' << Port << ',' << LU_Number << ',' << LDEV << ',' << nickname << ','<< LDEV_type << ',' << RAIDlevel << ','
+    os << hostname << ',' << bus_number << ',' << LUNname << ',' << HitachiProduct << ',' << HDSProduct
+       << ',' << ProductRevisionUnprintableAsDot
+       << ',' << SerialNumber
+       << ',' << Port << ',' << LU_Number << ',' << LDEV << ',' << nickname << ',' << LDEV_type << ',' << notes << ',' << RAIDlevel << ','
        << PG << ',' << poolID << ',' << CLPR << ',' << std::fixed << maxLBA
        << ',' << SizeMB << ',' << SizeMiB << ',' << SizeGB << ',' << SizeGiB << ',' << SizeTB << ',' << SizeTiB
        //<< ',' << ((openROgood) ? (openRWgood) ? std::string("O_RDWR") : std::string("O_RDONLY") : std::string("") )
        << ',' << VendorUnprintableAsDot << ',' << ProductUnprintableAsDot << ',' << ProductRevisionUnprintableAsDot
-       //<< ',' << HitachiVPD
-       << ',' << ((char*)PROBE_HOSTbuf);
+       << ',' << port_wwn << ',' << node_wwn
+       << ',' << protect
+       << ',' << SSID << ',' << CU << ',' << consistency_group
+       << ',' << TC_volstat
+       << ',' << SI_M0_volstat << ',' << SI_M1_volstat << ',' << SI_M2_volstat
+       << ',' << UR_M0_volstat << ',' << UR_M1_volstat << ',' << UR_M2_volstat << ',' << UR_M3_volstat
+
+        << ',' << HUVM_role
+        << ',' << physical_product    // e.g. OPEN-V
+        << ',' << physical_product_revision
+        << ',' << physical_product_ID   // 4 character, e.g. R800
+        << ',' << physical_submodel
+        << ',' << physical_serial
+        << ',' << physical_LDEV
+        << ',' << physical_LDEV_type
+        << ',' << physical_PG
+        << ',' << physical_RAID_level
+        << ',' << physical_Pool_ID
+        << ',' << physical_nickname
+        << ',' << physical_SSID
+        << ',' << physical_CU
+        << ',' << physical_consistency_group
+        << ',' << GAD_remote_serial
+        << ',' << GAD_remote_LDEV
+
+        << ',' << write_same
+        << ',' << page_size_sectors
+        << ',' << zero_reclaim_starting_sector
+        << ',' << pages_in_use
+        << ',' << pool_threshold
+        << ',' << available_threshold
+        << ',' << pool_usage
+        << ',' << pool_remaining_MiB
+        << ',' << total_pool_MiB
+        << ',' << optimal_write_same_granularity_sectors
+        << ',' << physical_pool_usage
+        << ',' << pool_saving_rate
+        << ',' << pool_physical_remaining_MiB
+        << ',' << pool_total_physical_MiB
+
+        << ',' << ((char*)PROBE_HOSTbuf);
     return os.str();
 }
 
@@ -122,10 +211,10 @@ void LUN_discovery::showall(ostream& o)
     //if (haveDefaultPage_EVPD) { display_memory_contents(o, def_buf_EVPD, sizeof(def_buf_EVPD), 16,"Page 0x00 with EVPD=1 (default_page): "); o << std::endl; }
     //if (def_sense_bytes_EVPD.length()>0) { o << "Page 0x00 with EVPD=1 - " << def_sense_bytes_EVPD; o << std::endl; }
 
-    //if (haveVpdPage) { display_memory_contents(o, vpd_buf, 4+vpd_buf[3], 16,"Page 0x83 with EVPD=1: "); o << std::endl; }
+    //if (haveVpdPage) { display_memory_contents(o, buf_83_vpd, 4+buf_83_vpd[3], 16,"Page 0x83 with EVPD=1: "); o << std::endl; }
     if (haveVpdPage)
     {
-        display_memory_contents(o, vpd_buf, sizeof(vpd_buf), 16,"Page 0x83 with EVPD=1: ");
+        display_memory_contents(o, buf_83_vpd, sizeof(buf_83_vpd), 16,"Page 0x83 with EVPD=1: ");
         o << std::endl;
     }
     if (vpd_sense_bytes.length()>0)
@@ -139,7 +228,7 @@ void LUN_discovery::showall(ostream& o)
 
     if (haveE0page)
     {
-        display_memory_contents(o, (unsigned char*)&E0_page, E0_page.additional_length, 16,"Page 0xE0 with EVPD=: ");
+        display_memory_contents(o, (unsigned char*)&E0_buf, E0_buf.additional_length, 16,"Page 0xE0 with EVPD=: ");
         o << std::endl;
     }
     if (page_E0_sense_bytes.length()>0)
@@ -148,9 +237,9 @@ void LUN_discovery::showall(ostream& o)
         o << std::endl;
     }
 
-    if (have_E2_sub_0_page)
+    if (have_E2_sub_0_HAM_buf)
     {
-        display_memory_contents(o, E2_sub_0_page, 4+E2_sub_0_page[3], 16,"Page 0xE2 subpage 0 [HAM]: ");
+        display_memory_contents(o, E2_sub_0_HAM_buf, 4+E2_sub_0_HAM_buf[3], 16,"Page 0xE2 subpage 0 [HAM]: ");
         o << std::endl;
     }
     if (page_E2_sub_0_sense_bytes.length()>0)
@@ -159,9 +248,9 @@ void LUN_discovery::showall(ostream& o)
         o << std::endl;
     }
 
-    if (have_E2_sub_1_page)
+    if (have_E2_sub_1_NDM_buf)
     {
-        display_memory_contents(o, E2_sub_1_page, 4+E2_sub_1_page[3], 16,"Page 0xE2 subpage 1 [NDM]: ");
+        display_memory_contents(o, E2_sub_1_NDM_buf, 4+E2_sub_1_NDM_buf[3], 16,"Page 0xE2 subpage 1 [NDM]: ");
         o << std::endl;
     }
     if (page_E2_sub_1_sense_bytes.length()>0)
@@ -170,17 +259,27 @@ void LUN_discovery::showall(ostream& o)
         o << std::endl;
     }
 
-    if (have_E2_sub_2_page)
+    if (have_E2_sub_2_GAD_buf)
     {
-        display_memory_contents(o, E2_sub_2_page, 4+E2_sub_2_page[3], 16,"Page 0xE2 subpage 2 [HUVM]: ");
+        display_memory_contents(o, E2_sub_2_GAD_buf, 4+E2_sub_2_GAD_buf[3], 16,"Page 0xE2 subpage 2 [HUVM]: ");
         o << std::endl;
     }
     if (page_E2_sub_2_sense_bytes.length()>0)
     {
-        o << "Page 0xE2 subpage 2 [HUVM] - " <<page_E2_sub_2_sense_bytes;
+        o << "Page 0xE2 subpage 2 [GAD] - " <<page_E2_sub_2_sense_bytes;
         o << std::endl;
     }
 
+    if (have_E3_THP_buf)
+    {
+        display_memory_contents(o, E3_THP_buf, 4+E3_THP_buf[3], 16,"Page 0xE3 HDP/HDT: ");
+        o << std::endl;
+    }
+    if (page_E3_THP_sense_bytes.length()>0)
+    {
+        o << "Page 0xE3 HDP/HDT - " << page_E3_THP_sense_bytes;
+        o << std::endl;
+    }
 
     o << "Constructor log:" << std::endl << constructor_log << std::endl;
 }
@@ -368,22 +467,13 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
     ProductRevisionUnprintableAsDot = printableAsDot(d+REVISION,REVISION_LEN);
     VendorSpecificUnprintableAsDotWithHex = printableAndHex(d+VENDOR_SPECIFIC,VENDOR_SPECIFIC_LEN);
 
-#ifdef DEBUG
-    std::cout << "VendorUnprintableAsDot=\"" + VendorUnprintableAsDot + "\"" << std::endl;
-    std::cout << "ProductUnprintableAsDot=\"" + ProductUnprintableAsDot + "\"" << std::endl;
-    std::cout << "std::string(PRODUCTOPENV)) =\"" + std::string(PRODUCTOPENV) + "\"" << std::endl;
-    std::cout << "ProductRevisionUnprintableAsDot=\"" + ProductRevisionUnprintableAsDot + "\"" << std::endl;
-    std::cout << "VendorSpecificUnprintableAsDotWithHex=\"" + VendorSpecificUnprintableAsDotWithHex + "\"" << std::endl;
-#endif//DEBUG
-
     HitachiProduct=HDSProduct=SerialNumber=Port=LDEV=(std::string("<not Hitachi LUN>"));
 
     // now get Vital Product Data page 0x83
-    haveVpdPage = get_page( (unsigned char*)&(vpd_buf[0]), sizeof(vpd_buf), vpd_cmd, "page 0x83 with EVPD=1", &vpd_sense_bytes);
-    //haveVpdPage_EVPD_off = get_page( (unsigned char*)&(vpd_buf_EVPD_off[0]), sizeof(vpd_buf_EVPD_off), vpd_cmd_EVPD_off, "page 0x83 with EVPD=0", &vpd_sense_bytes_EVPD_off);
+    haveVpdPage = get_page( (unsigned char*)&(buf_83_vpd[0]), sizeof(buf_83_vpd), vpd_cmd, "page 0x83 with EVPD=1", &vpd_sense_bytes);
 
     ostringstream oHitachiVPD;
-    display_memory_contents(oHitachiVPD, ((unsigned char*) vpd_buf)+38, 16, 16, "");
+    display_memory_contents(oHitachiVPD, ((unsigned char*) buf_83_vpd)+38, 16, 16, "");
     HitachiVPD=oHitachiVPD.str();
 
     /* INQUIRY response is present */
@@ -391,37 +481,42 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
     unsigned char* q = (unsigned char*) p;
 
 
-    if (VendorUnprintableAsDot==std::string(VENDORHITACHI))
+    if (VendorUnprintableAsDot!=std::string(VENDORHITACHI))
+    {
+        // vendor is not Hitachi
+        HitachiProduct=HDSProduct=SerialNumber=Port=LDEV="";
+    }
+    else
     {
         // vendor is Hitachi
         isHitachi=true;
         HitachiProduct=HDSProduct=SerialNumber=Port=LDEV=(std::string("<Hitachi LUN \"") + LUNname + std::string("\" - not recognized Hitachi subsystem type>"));
 
-        haveE0page = get_page( (unsigned char*)&E0_page, sizeof(E0_page), E0_cmd, "Hitachi-specific page 0xE0", &page_E0_sense_bytes);
+        haveE0page = get_page( (unsigned char*)&E0_buf, sizeof(E0_buf), E0_cmd, "Hitachi-specific page 0xE0", &page_E0_sense_bytes);
 
         if (!haveE0page) return;
 
-        E0_product   =  printableAsDot((unsigned char*)&E0_page.ProductID, sizeof(E0_page.ProductID));
-        SerialNumber =  printableAsDot((unsigned char*)&E0_page.NodeSN,    sizeof(E0_page.NodeSN));
+        E0_product   =  printableAsDot((unsigned char*)&E0_buf.ProductID, sizeof(E0_buf.ProductID));
+        SerialNumber =  printableAsDot((unsigned char*)&E0_buf.NodeSN,    sizeof(E0_buf.NodeSN));
 
-        have_E2_sub_0_page = get_page( E2_sub_0_page, sizeof(E2_sub_0_page), E2_sub_0_cmd, "0xE2 sub page 0 (HAM): ", &page_E2_sub_0_sense_bytes );
-        have_E2_sub_1_page = get_page( E2_sub_1_page, sizeof(E2_sub_1_page), E2_sub_1_cmd, "0xE0 sub page 1 (NDM): ", &page_E2_sub_1_sense_bytes );
-        have_E2_sub_2_page = get_page( E2_sub_2_page, sizeof(E2_sub_2_page), E2_sub_2_cmd, "0xE0 sub page 2 (HUVM): ", &page_E2_sub_2_sense_bytes );
+        have_E2_sub_0_HAM_buf = get_page( E2_sub_0_HAM_buf, sizeof(E2_sub_0_HAM_buf), E2_sub_0_cmd, "0xE2 sub page 0 (HAM): ", &page_E2_sub_0_sense_bytes );
+        have_E2_sub_1_NDM_buf = get_page( E2_sub_1_NDM_buf, sizeof(E2_sub_1_NDM_buf), E2_sub_1_cmd, "0xE0 sub page 1 (NDM): ", &page_E2_sub_1_sense_bytes );
+        have_E2_sub_2_GAD_buf = get_page( E2_sub_2_GAD_buf, sizeof(E2_sub_2_GAD_buf), E2_sub_2_cmd, "0xE0 sub page 2 (GAD): ", &page_E2_sub_2_sense_bytes );
 
 #ifdef DEBUG
-        std::cout << "sizeof EO page = " << sizeof(E0_page) << std::endl;
-        std::cout << "E0 microcode version = " << printableAndHex((unsigned char*)E0_page.MicroVersion, sizeof(E0_page.MicroVersion)) << std::endl;
-        std::cout << "E0 vendor ID = " << printableAndHex((unsigned char*)&E0_page.VendorID, sizeof(E0_page.VendorID)) << std::endl;
-        std::cout << "E0 local ID = " << printableAndHex((unsigned char*)&E0_page.LocalID, sizeof(E0_page.LocalID)) << std::endl;
-        std::cout << "E0 product ID = " << printableAndHex((unsigned char*)&E0_page.ProductID, sizeof(E0_page.ProductID)) << std::endl;
-        std::cout << "E0 host group = " << printableAndHex((unsigned char*)&E0_page.HostGroup, sizeof(E0_page.HostGroup)) << std::endl;
-        std::cout << "E0 node S/N = " << printableAndHex((unsigned char*)&E0_page.NodeSN, sizeof(E0_page.NodeSN)) << std::endl;
-        std::cout << "E0 command dev = " << printableAndHex((unsigned char*)&E0_page.CmdDev, sizeof(E0_page.CmdDev)) << std::endl;
-        std::cout << "E0 LU number (ascii of hex value) = " << printableAndHex((unsigned char*)&E0_page.LunNumberHexAsAscii, sizeof(E0_page.LunNumberHexAsAscii)) << std::endl;
-        std::cout << "E0 port WWN = " << printableAndHex((unsigned char*)&E0_page.PortWWN, sizeof(E0_page.PortWWN)) << std::endl;
-        std::cout << "E0 port type ('5') = " << printableAndHex((unsigned char*)&E0_page.PortType, sizeof(E0_page.PortType)) << std::endl;
-        std::cout << "E0 port high = " << printableAndHex((unsigned char*)&E0_page.PortSerialNumber_high, sizeof(E0_page.PortSerialNumber_high)) << std::endl;
-        std::cout << "E0 port low = " << printableAndHex((unsigned char*)&E0_page.PortSerialNumber_low, sizeof(E0_page.PortSerialNumber_low)) << std::endl;
+        std::cout << "sizeof EO page = " << sizeof(E0_buf) << std::endl;
+        std::cout << "E0 microcode version = " << printableAndHex((unsigned char*)E0_buf.MicroVersion, sizeof(E0_buf.MicroVersion)) << std::endl;
+        std::cout << "E0 vendor ID = " << printableAndHex((unsigned char*)&E0_buf.VendorID, sizeof(E0_buf.VendorID)) << std::endl;
+        std::cout << "E0 local ID = " << printableAndHex((unsigned char*)&E0_buf.LocalID, sizeof(E0_buf.LocalID)) << std::endl;
+        std::cout << "E0 product ID = " << printableAndHex((unsigned char*)&E0_buf.ProductID, sizeof(E0_buf.ProductID)) << std::endl;
+        std::cout << "E0 host group = " << printableAndHex((unsigned char*)&E0_buf.HostGroup, sizeof(E0_buf.HostGroup)) << std::endl;
+        std::cout << "E0 node S/N = " << printableAndHex((unsigned char*)&E0_buf.NodeSN, sizeof(E0_buf.NodeSN)) << std::endl;
+        std::cout << "E0 command dev = " << printableAndHex((unsigned char*)&E0_buf.CmdDev, sizeof(E0_buf.CmdDev)) << std::endl;
+        std::cout << "E0 LU number (ascii of hex value) = " << printableAndHex((unsigned char*)&E0_buf.LunNumberHexAsAscii, sizeof(E0_buf.LunNumberHexAsAscii)) << std::endl;
+        std::cout << "E0 port WWN = " << printableAndHex((unsigned char*)&E0_buf.PortWWN, sizeof(E0_buf.PortWWN)) << std::endl;
+        std::cout << "E0 port type ('5') = " << printableAndHex((unsigned char*)&E0_buf.PortType, sizeof(E0_buf.PortType)) << std::endl;
+        std::cout << "E0 port high = " << printableAndHex((unsigned char*)&E0_buf.PortSerialNumber_high, sizeof(E0_buf.PortSerialNumber_high)) << std::endl;
+        std::cout << "E0 port low = " << printableAndHex((unsigned char*)&E0_buf.PortSerialNumber_low, sizeof(E0_buf.PortSerialNumber_low)) << std::endl;
 #endif//DEBUG
         // Port
         if ( (! isdigit( (int) *(q+VENDOR_SPECIFIC+PORTWITHINVENDORSPECIFIC)))
@@ -557,246 +652,657 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
             // subsystem type DF
 
         }
-        else
+        else if ( (ProductUnprintableAsDot == std::string(PRODUCTDISKSUBSYSTEM))
+               || (ProductUnprintableAsDot.substr(0,5) == std::string("OPEN-")) )
         {
-            if ( (ProductUnprintableAsDot == std::string(PRODUCTDISKSUBSYSTEM))
-                    || (ProductUnprintableAsDot == std::string(PRODUCTOPENV))
-                    || (ProductUnprintableAsDot == std::string(PRODUCTOPENVCM)) )
+
+            // subsystem type RAID
+
+            if (E0_buf.ProductID == std::string("R800"))
             {
-
-                // subsystem type RAID
-
-                std::string E0hm8 {""};
-                for (int i=0; i<3; i++)
+                switch (E0_buf.sub_model_ID)
                 {
-                    E0hm8.push_back(E0_page.ProductID[i]);
-                }
-
-                if ( 0==std::string("HM8").compare(E0hm8) )
-                {
-                    // HM800
-
-                    // The old code below that worked for some earlier subsystem generations didn't work with a pre-GA HM800,
-                    // and I could see by running "InquireAbout -showall /dev/sdxx" that the info we wanted was available
-                    // in the default SCSI Inquiry data.
-
-                    // So the idea was that if you keep a separate piece of code for each subsystem type,
-                    // then one you make it work, it pretty much stays working as long as the subsystem type itself changes its behavour.
-
-                    // Default SCSI Inquiry page is "def_buf", which when I wrote this showed as 255 bytes long.
-
-                    HitachiProduct="HM800";
-                    HDSProduct="VSP Gx00";
-                    LDEV = LDEV_no_colon.substr(0,2) + std::string(":") + LDEV_no_colon.substr(2,2);
-
-                    std::ostringstream pgstr,pg_no_hyphen_str;
-
-                    switch(def_buf[96+2])
-                    {
-                    case 0x01:
-                        LDEV_type="Internal";
-                        RAIDlevel="RAID-1";
-                        pgstr << /*std::setw(2) << std::setfill('0') << */ ((int) def_buf[96]) << '-' << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[97]);
-                        PG=pgstr.str();
-                        pg_no_hyphen_str << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]) << /* std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]);
-                        PG_no_hyphen=pg_no_hyphen_str.str();
+                    case 0x00:
+                        HitachiProduct = "RAID800";
+                        HDSProduct = "VSP G1000";
                         break;
-                    case 0x05:
-                        LDEV_type="Internal";
-                        RAIDlevel="RAID-5";
-                        pgstr << /*std::setw(2) << std::setfill('0') << */ ((int) def_buf[96]) << '-' << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[97]);
-                        PG=pgstr.str();
-                        pg_no_hyphen_str << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]) << /* std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]);
-                        PG_no_hyphen=pg_no_hyphen_str.str();
+                    case 0x80:
+                        HitachiProduct = "RAID800";
+                        HDSProduct = "VSP G1500";
                         break;
-                    case 0x06:
-                        LDEV_type="Internal";
-                        RAIDlevel="RAID-6";
-                        pgstr << /*std::setw(2) << std::setfill('0') << */ ((int) def_buf[96]) << '-' << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[97]);
-                        PG=pgstr.str();
-                        pg_no_hyphen_str << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]) << /* std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]);
-                        PG_no_hyphen=pg_no_hyphen_str.str();
-                        break;
-                    case 0x10:
-                        LDEV_type="External";
-                        RAIDlevel="External";
-                        pgstr << "0x" << std::hex << std::setw(4) << std::setfill('0') << (   (((int)def_buf[96]) << 8)  +  ((int)def_buf[97])  );
-                        PG=PG_no_hyphen=pgstr.str();
-                        break;
-                    case 0x12:
-                        LDEV_type="DP-Vol";
-                        RAIDlevel="DP-Vol";
-                        pgstr << ((((int)def_buf[96]) << 8) + ((int)def_buf[97]));
-                        poolID = pgstr.str();
+                    case 0xC0:
+                        HitachiProduct = "RAID800";
+                        HDSProduct = "VSP F1500";
                         break;
                     default:
-                        pgstr << "RAID subsystem - unknown RAID level = 0x" << std::hex << std::setw(2) << std::setfill('0') << def_buf[96+2] << std::endl;
-                        constructor_log += pgstr.str();
-                    }
-
-
-                    {
-                        std::ostringstream sn;
-                        sn << '4';
-                        for (unsigned int i = 3; i < sizeof(E0_page.NodeSN); i++)  // NodeSN for serial number 410116, NodeSN contained "00010116"
-                        {
-                            sn << E0_page.NodeSN[i];
-                        }
-                        SerialNumber = sn.str();
-                    }
-
-                    int nickname_length=0;
-                    for (unsigned char* p = &(def_buf[212]); (*p)!=0 && (nickname_length<31); p++) nickname_length++;
-                    if (nickname_length>0) nickname = printableAsDot((unsigned char*)&(def_buf[212]), nickname_length);
-
                     {
                         std::ostringstream o;
-                        o << "CLPR" << ((int)def_buf[140+1]);
-                        CLPR=o.str();
-                    }
-
-                    if (ProductUnprintableAsDot == std::string(PRODUCTOPENVCM))
-                    {
-                        LDEV_type=CMD_DEV;
+                        o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
+                            << " for Product ID \"R800\".";
+                        HitachiProduct = HDSProduct = o.str();
                     }
                 }
-                else	// not HM800
+            }
+            else if (E0_buf.ProductID == std::string("HM86"))
+            {
+                switch (E0_buf.sub_model_ID)
                 {
-                    Hitachi_RAID_SI_format* p_vpd = (Hitachi_RAID_SI_format*) &(vpd_buf[0]);
-
-                    ostringstream pgstr;
-                    ostringstream pg_no_hyphen_str;
-
-                    switch (p_vpd->RAID_level)
-                    {
-                    case 0x01:
-                        LDEV_type="Internal";
-                        RAIDlevel="RAID-1";
-                        pgstr << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_high) << '-' << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_low);
-                        PG=pgstr.str();
-                        pg_no_hyphen_str << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_high) << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_low);
-                        PG_no_hyphen=pg_no_hyphen_str.str();
+                    case 0x00:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G800";
                         break;
-                    case 0x05:
-                        LDEV_type="Internal";
-                        RAIDlevel="RAID-5";
-                        pgstr << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_high) << '-' << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_low);
-                        PG=pgstr.str();
-                        pg_no_hyphen_str << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_high) << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_low);
-                        PG_no_hyphen=pg_no_hyphen_str.str();
+                    case 0x40:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP F800";
                         break;
-                    case 0x06:
-                        LDEV_type="Internal";
-                        RAIDlevel="RAID-6";
-                        pgstr << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_high) << '-' << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_low);
-                        PG=pgstr.str();
-                        pg_no_hyphen_str << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_high) << std::setw(2) << std::setfill('0') << ((int)p_vpd->location_low);
-                        PG_no_hyphen=pg_no_hyphen_str.str();
+                    case 0x20:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G900";
                         break;
-                    case 0x10:
-                        LDEV_type="External";
-                        pgstr << "0x" << std::hex << std::setw(4) << std::setfill('0') << (((p_vpd->location_high) << 8) + p_vpd->location_low);
-                        PG=PG_no_hyphen=pgstr.str();
-                        break;
-                    case 0x12:
-                        LDEV_type="DP-Vol";
-                        pgstr << "pool=" << (((p_vpd->location_high) << 8) + p_vpd->location_low);
-                        poolID = pgstr.str();
+                    case 0x60:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP F900";
                         break;
                     default:
-                        pgstr << "RAID subsystem - unknown RAID level = 0x" << std::hex << std::setw(2) << std::setfill('0') << p_vpd->RAID_level << std::endl;
-                        constructor_log += pgstr.str();
-                    }
-                    pgstr.str("");
-                    pgstr.clear();
-                    pgstr << "CLPR" << (int)def_buf[140+1];
-                    CLPR=pgstr.str();
-
-                    unsigned int nickname_length=0;
-                    for (char* p = &(p_vpd->LDEV_nickname[0]); (*p)!=0 && (nickname_length<sizeof(p_vpd->LDEV_nickname)); p++) nickname_length++;
-                    if (nickname_length>0) nickname = printableAsDot((unsigned char*)&(p_vpd->LDEV_nickname[0]), nickname_length);
-
-                    if (LDEV.length() == 4)
                     {
-                        // might be an error message in there
-                        LDEV=LDEV.substr(0,2) + ':' + LDEV.substr(2,2);
+                        std::ostringstream o;
+                        o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
+                            << " for Product ID \"HM86\".";
+                        HitachiProduct = HDSProduct = o.str();
                     }
-
-
-                    if (
-                        (   (ProductUnprintableAsDot==std::string(PRODUCTOPENVCM))
-                            || (ProductUnprintableAsDot==std::string(PRODUCTOPENV))
-                        )
-                        &&
-                        (    ((vpd_buf[38+4])==0x06)
-                             || ((vpd_buf[38+4])==0x16)
-                        )
+                }
+            }
+            else if (E0_buf.ProductID == std::string("HM84"))
+            {
+                switch (E0_buf.sub_model_ID)
+                {
+                    case 0x00:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G400/G600";
+                        break;
+                    case 0x40:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP F400/F600";
+                        break;
+                    case 0x23:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G700";
+                        break;
+                    case 0x63:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP F700";
+                        break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
+                            << " for Product ID \"HM84\".";
+                        HitachiProduct = HDSProduct = o.str();
+                    }
+                }
+            }
+            else if (E0_buf.ProductID == std::string("HM82"))
+            {
+                switch (E0_buf.sub_model_ID)
+                {
+                    case 0x00:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G200";
+                        break;
+                    case 0x20:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G150";
+                        break;
+                    case 0x21:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G350";
+                        break;
+                    case 0x22:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G370";
+                        break;
+                    case 0x24:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP G90";
+                        break;
+                    case 0x61:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP F350";
+                        break;
+                    case 0x62:
+                        HitachiProduct = "HM800";
+                        HDSProduct = "VSP F370";
+                        break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
+                            << " for Product ID \"HM82\".";
+                        HitachiProduct = HDSProduct = o.str();
+                    }
+                }
+            }
+            else if (    ((buf_83_vpd[38+4])==0x06)    // This different way of detecting RAID700 is because RAID700 is not documented in the SCSI Inquiry spec doc
+                      || ((buf_83_vpd[38+4])==0x16)    // so I didn't know if the ProductID would be "R700".
                     )
-                    {
-
-                        // VSP
-                        // 00010203 04050607 08091011 12131415		Subsystem type	HM700 serial number part	Earlier RAID serial number	HM700 serial number part, decimal	Earlier RAID serial number, decimal
-                        // 60060e80 1600f300 000100f3 00000009	"HITACHI ","OPEN-V-CM       ","5001"	16	100f3	00f3	65779	243
-
-                        HitachiProduct="RAID700";
-                        HDSProduct="VSP";
-                        uint32_t RAIDserialnumber = (((uint32_t) (vpd_buf[38+9] % 16)) << 16) + (((uint32_t)vpd_buf[38+10]) << 8) + vpd_buf[38+11];
-                        ostringstream o;
-                        o << RAIDserialnumber;
-                        SerialNumber=o.str();
-
-
-                    }
-                    else if (     (
-                                      (ProductUnprintableAsDot==std::string(PRODUCTDISKSUBSYSTEM))
-                                      || (ProductUnprintableAsDot==std::string(PRODUCTOPENVCM))
-                                      || (ProductUnprintableAsDot==std::string(PRODUCTOPENV))
-                                  )
-                                  && ((vpd_buf[38+4])==0x13))
-                    {
-                        // HUS VM
-                        // 00010203 04050607 08091011 12131415		Subsystem type	HM700 serial number part	Earlier RAID serial number	HM700 serial number part, decimal	Earlier RAID serial number, decimal
-                        // 60060e80 13274800 50202748 0000ffff	"HITACHI ","DISK-SUBSYSTEM  ","5001"	13	02748	2748	10056	10056
-
-                        HitachiProduct="HM700";
-                        HDSProduct="HUS VM";
-                        uint32_t RAIDserialnumber = 200000 + (((uint32_t) (vpd_buf[38+9] % 16)) << 16) + (((uint32_t)vpd_buf[38+10]) << 8) + vpd_buf[38+11];
-                        ostringstream o;
-                        o << RAIDserialnumber;
-                        SerialNumber=o.str();
-
-                    }
-                    else if (E0_product == std::string("R800"))
-                    {
-                        HitachiProduct="RAID800";
-                        HDSProduct="VSP G1000/F1500/G1500";
-                        uint32_t RAIDserialnumber = 300000 + (((uint32_t) (vpd_buf[38+9] % 16)) << 16) + (((uint32_t)vpd_buf[38+10]) << 8) + vpd_buf[38+11];
-                        ostringstream o;
-                        o << RAIDserialnumber;
-                        SerialNumber=o.str();
-                    }
-                    else
-                    {
-                        HitachiProduct="TBD";
-                        HDSProduct="TBD";
-                        SerialNumber="TBD";
-                    }
-
-                } // end not HM800 case
-
+            {
+                HitachiProduct = "RAID700";
+                HDSProduct = "VSP";
             }
             else
             {
-                HitachiProduct="NotRecognized";
-                HDSProduct="";
-                SerialNumber="";
+                std::ostringstream o;
+                o << "Unknown \"RAID\" (Hitachi enterprise family) subsystem Product ID \"" << (E0_buf.ProductID) << "\""
+                    << " submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
+                    << ".";
+                HitachiProduct = HDSProduct = o.str();
+            }
+
+            if (LDEV.length() == 4)
+            {
+                LDEV=LDEV.substr(0,2) + ':' + LDEV.substr(2,2);
+            }
+
+            std::ostringstream pgstr,pg_no_hyphen_str;
+
+            switch(def_buf[96+2])
+            {
+            case 0x01:
+                LDEV_type="Internal";
+                RAIDlevel="RAID-1";
+                pgstr << /*std::setw(2) << std::setfill('0') << */ ((int) def_buf[96]) << '-' << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[97]);
+                PG=pgstr.str();
+                pg_no_hyphen_str << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]) << /* std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]);
+                PG_no_hyphen=pg_no_hyphen_str.str();
+                break;
+            case 0x05:
+                LDEV_type="Internal";
+                RAIDlevel="RAID-5";
+                pgstr << /*std::setw(2) << std::setfill('0') << */ ((int) def_buf[96]) << '-' << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[97]);
+                PG=pgstr.str();
+                pg_no_hyphen_str << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]) << /* std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]);
+                PG_no_hyphen=pg_no_hyphen_str.str();
+                break;
+            case 0x06:
+                LDEV_type="Internal";
+                RAIDlevel="RAID-6";
+                pgstr << /*std::setw(2) << std::setfill('0') << */ ((int) def_buf[96]) << '-' << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[97]);
+                PG=pgstr.str();
+                pg_no_hyphen_str << /*std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]) << /* std::setw(2) << std::setfill('0') << */ ((int)def_buf[96]);
+                PG_no_hyphen=pg_no_hyphen_str.str();
+                break;
+            case 0x10:
+                LDEV_type="External";
+                RAIDlevel="External";
+                pgstr << "0x" << std::hex << std::setw(4) << std::setfill('0') << (   (((int)def_buf[96]) << 8)  +  ((int)def_buf[97])  );
+                PG=PG_no_hyphen=pgstr.str();
+                break;
+            case 0x11:
+                LDEV_type="TI_SVOL?_0x11";
+                RAIDlevel="TI_SVOL?_0x11";
+                pgstr << "0x" << std::hex << std::setw(4) << std::setfill('0') << (   (((int)def_buf[96]) << 8)  +  ((int)def_buf[97])  );
+                PG=PG_no_hyphen=pgstr.str();
+                break;
+            case 0x12:
+                LDEV_type="DP-Vol";
+                RAIDlevel="DP-Vol";
+                pgstr << ((((int)def_buf[96]) << 8) + ((int)def_buf[97]));
+                poolID = pgstr.str();
+
+                // We get the HDP stats from page E3
+                have_E3_THP_buf = get_page( E3_THP_buf, sizeof(E3_THP_buf), E3_THP_cmd, "page 0xE3 HDP/HDT with EVPD=1", &page_E3_THP_sense_bytes);
+                if (have_E3_THP_buf)
+                {
+                    unsigned int additional_length = (unsigned int) E3_THP_buf[3];
+                    uint32_t vol_type {0};
+                    if (additional_length >= 0x2E)
+                    {
+                        vol_type = load_32bit(E3_THP_buf+4);
+                        if (vol_type == 0)
+                        {
+                            std::ostringstream o;
+                            o << "<Error> Had already determined that a DP-Vol is being processed, but page 0xE3 vol type says 0x00000000 - not DP-Vol"
+                            << " at line " << __LINE__ << " of " << __FILE__;
+                            write_same = o.str();
+                        }
+                        else if (vol_type == 0x01000000 || vol_type == 0x00000001) // documentation only talks about a value 0x01, so ambiguous if one byte field is looked at
+                        {
+                            write_same = "not supported";
+                        }
+                        else if (vol_type == 0x02000000 || vol_type == 0x00000002) // documentation only talks about a value 0x01, so ambiguous if one byte field is looked at
+                        {
+                            write_same = "supported";
+                        }
+                        else
+                        {
+                            std::ostringstream o;
+                            o << "<Error> page 0xE3 vol_type 0x" << std::hex << std::setw(8) << std::setfill('0') << vol_type << " not recognized"
+                            << " at line " << __LINE__ << " of " << __FILE__;
+                            write_same = o.str();
+                        }
+
+                        {
+                            auto s = load_32bit(E3_THP_buf+8);
+                            std::ostringstream o;
+                            o << s;
+                            page_size_sectors = o.str();
+                        }
+
+                        {
+                            auto s = load_64bit(E3_THP_buf+12);
+                            std::ostringstream o;
+                            o << s;
+                            zero_reclaim_starting_sector = o.str();
+                        }
+
+                        {
+                            auto s = load_64bit(E3_THP_buf+20);
+                            std::ostringstream o;
+                            o << s;
+                            pages_in_use = o.str();
+                        }
+
+                        {
+                            unsigned int s = E3_THP_buf[30];
+                            std::ostringstream o;
+                            o << s << '%';
+                            pool_threshold = o.str();
+                        }
+
+                        {
+                            unsigned int s = E3_THP_buf[31];
+                            std::ostringstream o;
+                            o << s << '%';
+                            available_threshold = o.str();
+                        }
+
+                        {
+                            unsigned int s = E3_THP_buf[32];
+                            std::ostringstream o;
+                            o << s << '%';
+                            pool_usage = o.str();
+                        }
+
+                        {
+                            auto s = load_64bit(E3_THP_buf+34);
+                            std::ostringstream o;
+                            o << s;
+                            pool_remaining_MiB = o.str();
+                        }
+
+                        {
+                            auto s = load_64bit(E3_THP_buf+42);
+                            std::ostringstream o;
+                            o << s;
+                            total_pool_MiB = o.str();
+                        }
+                    }
+                    if (additional_length >= 0x32)
+                    {
+                        auto s = load_32bit(E3_THP_buf+50);
+                        std::ostringstream o;
+                        o << s;
+                        optimal_write_same_granularity_sectors = o.str();
+                    }
+                    if (additional_length >= 0x44)
+                    {
+
+                        {
+                            unsigned int s = E3_THP_buf[54];
+                            std::ostringstream o;
+                            o << s << '%';
+                            physical_pool_usage = o.str();
+                        }
+
+                        {
+                            unsigned int s = E3_THP_buf[55];
+                            std::ostringstream o;
+                            o << s << '%';
+                            pool_saving_rate = o.str();
+                        }
+
+                        {
+                            auto s = load_64bit(E3_THP_buf+56);
+                            std::ostringstream o;
+                            o << s;
+                            pool_physical_remaining_MiB = o.str();
+                        }
+
+                        {
+                            auto s = load_64bit(E3_THP_buf+64);
+                            std::ostringstream o;
+                            o << s;
+                            pool_total_physical_MiB = o.str();
+                        }
+                    }
+                }
+
+
+                break;
+            default:
+                pgstr << "RAID subsystem - unknown RAID level = 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[96+2] << std::endl;
+                constructor_log += pgstr.str();
+                LDEV_type=pgstr.str();
+                RAIDlevel=pgstr.str();
+            }
+
+            {
+                int nickname_length=0;
+                for (unsigned char* p = &(def_buf[212]); (*p)!=0 && (nickname_length<31); p++) nickname_length++;
+                if (nickname_length>0) nickname = printableAsDot((unsigned char*)&(def_buf[212]), nickname_length);
+            }
+
+            {
+                std::ostringstream o;
+                o << "CLPR" << ((int)def_buf[140+1]);
+                CLPR=o.str();
+            }
+
+            if (ProductUnprintableAsDot == std::string(PRODUCTOPENVCM))
+            {
+                LDEV_type=CMD_DEV;
+            }
+
+            SerialNumber = decode_hex_serial_number(def_buf+36);
+
+            if (haveDefaultPage)
+            {
+                port_wwn = printAsHex(def_buf+104,8);
+                node_wwn = printAsHex(def_buf+104+8,8);
+
+                {
+                    std::ostringstream o;
+                    o << "0x"
+                        << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << (unsigned int) def_buf[96+8+2+1]
+                        << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << (unsigned int) def_buf[96+8+2+1+1];
+                    SSID = o.str();
+                }
+
+                {
+                    std::ostringstream o;
+                    o << "0x"
+                        << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << (unsigned int) def_buf[96+8+2+1+2];
+                    CU = o.str();
+                }
+
+                unsigned char ctg = def_buf[96+8+2+1+2+1];
+                if ( 0xFF != ctg)
+                {
+                    std::ostringstream o;
+                    o << "0x"
+                        << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << (unsigned int) ctg;
+                    consistency_group = o.str();
+                }
+
+                if (def_buf[5] && 1) { protect = std::string("T10_PI"); }
+
+                switch (def_buf[52])
+                {
+                    case 1: TC_volstat = std::string("SMPL"); break;
+                    case 2: TC_volstat = std::string("PVOL"); break;
+                    case 3: TC_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "unknown 0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[52];
+                        TC_volstat = o.str();
+                    }
+                }
+
+                switch (def_buf[53])
+                {
+                    case 1: SI_M0_volstat = std::string("SMPL"); break;
+                    case 2: SI_M0_volstat = std::string("PVOL"); break;
+                    case 3: SI_M0_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "unknown 0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[53];
+                        SI_M0_volstat = o.str();
+                    }
+                }
+
+                switch (def_buf[54])
+                {
+                    case 1: SI_M1_volstat = std::string("SMPL"); break;
+                    case 2: SI_M1_volstat = std::string("PVOL"); break;
+                    case 3: SI_M1_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "unknown 0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[54];
+                        SI_M0_volstat = o.str();
+                    }
+                }
+
+                switch (def_buf[55])
+                {
+                    case 1: SI_M2_volstat = std::string("SMPL"); break;
+                    case 2: SI_M2_volstat = std::string("PVOL"); break;
+                    case 3: SI_M2_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "unknown 0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[55];
+                        SI_M2_volstat = o.str();
+                    }
+                }
+
+                switch (def_buf[144])
+                {
+                    case 1: UR_M0_volstat = std::string("SMPL"); break;
+                    case 2: UR_M0_volstat = std::string("PVOL"); break;
+                    case 3: UR_M0_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[144];
+                        UR_M0_volstat = o.str();
+                    }
+                }
+
+                switch (def_buf[144+1])
+                {
+                    case 1: UR_M1_volstat = std::string("SMPL"); break;
+                    case 2: UR_M1_volstat = std::string("PVOL"); break;
+                    case 3: UR_M1_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[144+1];
+                        UR_M1_volstat = o.str();
+                    }
+                }
+
+                switch (def_buf[144+2])
+                {
+                    case 1: UR_M2_volstat = std::string("SMPL"); break;
+                    case 2: UR_M2_volstat = std::string("PVOL"); break;
+                    case 3: UR_M2_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[144+2];
+                        UR_M2_volstat = o.str();
+                    }
+                }
+
+                switch (def_buf[144+3])
+                {
+                    case 1: UR_M3_volstat = std::string("SMPL"); break;
+                    case 2: UR_M3_volstat = std::string("PVOL"); break;
+                    case 3: UR_M3_volstat = std::string("SVOL"); break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "0x" << std::hex << std::uppercase << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[144+3];
+                        UR_M3_volstat = o.str();
+                    }
+                }
+            }
+
+            if (have_E2_sub_2_GAD_buf)
+            {
+                switch (E2_sub_2_GAD_buf[4])
+                {
+                    case (1):
+                        HUVM_role = std::string("Migration Source");  // does not have remote DKC
+                        break;
+                    case (2):
+                        HUVM_role = std::string("Migration Target");  // does not have remote DKC
+                        break;
+                    case (4):
+                        HUVM_role = std::string("GAD PVOL");
+                        break;
+                    case (8):
+                        HUVM_role = std::string("GAD SVOL");
+                        break;
+                    default:;
+                }
+                std::ostringstream pgstr;
+                switch (E2_sub_2_GAD_buf[4])  // the second time, we get the info on physical DKC (and in the case of GAD, the remote physical DKC)
+                {
+                    case (4): case (8):
+                        // info on remote physical DKC
+                        GAD_remote_serial = decode_hex_serial_number(E2_sub_2_GAD_buf+200);
+                        GAD_remote_LDEV.push_back(E2_sub_2_GAD_buf[200+8]);
+                        GAD_remote_LDEV.push_back(E2_sub_2_GAD_buf[200+8+1]);
+                        GAD_remote_LDEV.push_back(':');
+                        GAD_remote_LDEV.push_back(E2_sub_2_GAD_buf[200+8+2]);
+                        GAD_remote_LDEV.push_back(E2_sub_2_GAD_buf[200+8+3]);
+                        // fallthrough to next bit without "break" is deliberate.
+                    case (1): case (2):
+                        // info on local physical DKC
+                        physical_product = printableAsDot(E2_sub_2_GAD_buf+8,16);
+                        physical_product_revision = printableAsDot(E2_sub_2_GAD_buf+24,4);
+                        physical_serial = decode_hex_serial_number(E2_sub_2_GAD_buf+28);
+                        physical_LDEV.push_back(E2_sub_2_GAD_buf[28+8]);
+                        physical_LDEV.push_back(E2_sub_2_GAD_buf[28+8+1]);
+                        physical_LDEV.push_back(':');
+                        physical_LDEV.push_back(E2_sub_2_GAD_buf[28+8+2]);
+                        physical_LDEV.push_back(E2_sub_2_GAD_buf[28+8+3]);
+
+                        switch(E2_sub_2_GAD_buf[40+2])
+                        {
+                        case 0x01:
+                            physical_LDEV_type="Internal";
+                            physical_RAID_level="RAID-1";
+                            pgstr << ((unsigned int) E2_sub_2_GAD_buf[40]) << '-' << ((unsigned int)E2_sub_2_GAD_buf[40+1]);
+                            physical_PG=pgstr.str();
+                            break;
+                        case 0x05:
+                            physical_LDEV_type="Internal";
+                            physical_RAID_level="RAID-5";
+                            pgstr << ((unsigned int) E2_sub_2_GAD_buf[40]) << '-' << ((unsigned int)E2_sub_2_GAD_buf[40+1]);
+                            physical_PG=pgstr.str();
+                            break;
+                        case 0x06:
+                            physical_LDEV_type="Internal";
+                            physical_RAID_level="RAID-6";
+                            pgstr << ((unsigned int) E2_sub_2_GAD_buf[40]) << '-' << ((unsigned int)E2_sub_2_GAD_buf[40+1]);
+                            physical_PG=pgstr.str();
+                            break;
+                        case 0x10:
+                            physical_LDEV_type="External";
+                            break;
+                        case 0x12:
+                            physical_LDEV_type="DP-Vol";
+                            pgstr << ((((unsigned int)E2_sub_2_GAD_buf[40]) << 8) + ((unsigned int)E2_sub_2_GAD_buf[40+1]));
+                            physical_Pool_ID = pgstr.str();
+                            break;
+                        default:;
+                        }
+
+                        {
+                            int nickname_length=0;
+                            for (unsigned char* p = E2_sub_2_GAD_buf+40; (*p)!=0 && (nickname_length<31); p++) nickname_length++;
+                            if (nickname_length>0) physical_nickname = printableAsDot(E2_sub_2_GAD_buf+40, nickname_length);
+                        }
+
+                        physical_SSID = std::string("0x")              + printAsHex(E2_sub_2_GAD_buf+40+2+1    ,2);
+                        physical_CU = std::string("0x")                + printAsHex(E2_sub_2_GAD_buf+40+2+1+2  ,1);
+                        physical_consistency_group = std::string("0x") + printAsHex(E2_sub_2_GAD_buf+40+2+1+2+1,1);
+
+                        physical_product_ID = printableAsDot(E2_sub_2_GAD_buf+184,4);
+                        physical_submodel = std::string("0x") + printAsHex(E2_sub_2_GAD_buf+183,1);
+                    default:;
+                }
+            }
+
+            if (TC_volstat.size() > 0 && TC_volstat != std::string("SMPL") )
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("TC ");
+                notes += TC_volstat;
+            }
+
+            if (ProductUnprintableAsDot == std::string("OPEN-0V         "))
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("TI SVOL");
+            }
+
+            if (SI_M0_volstat.size() > 0 && SI_M0_volstat != std::string("SMPL") )
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("MRCF0 ");
+                notes += SI_M0_volstat;
+            }
+
+            if (SI_M1_volstat.size() > 0 && SI_M1_volstat != std::string("SMPL") )
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("MRCF1 ");
+                notes += SI_M1_volstat;
+            }
+
+            if (SI_M2_volstat.size() > 0 && SI_M2_volstat != std::string("SMPL") )
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("MRCF2 ");
+                notes += SI_M2_volstat;
+            }
+
+            if (UR_M0_volstat.size() > 0 && UR_M0_volstat != std::string("SMPL") && TC_volstat != UR_M0_volstat)
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("UR0 ");
+                notes += UR_M0_volstat;
+            }
+
+            if (UR_M1_volstat.size() > 0 && UR_M1_volstat != std::string("SMPL") )
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("UR1 ");
+                notes += UR_M1_volstat;
+            }
+
+            if (UR_M2_volstat.size() > 0 && UR_M2_volstat != std::string("SMPL") )
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("UR2 ");
+                notes += UR_M2_volstat;
+            }
+
+            if (UR_M3_volstat.size() > 0 && UR_M3_volstat != std::string("SMPL") )
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += std::string("UR3 ");
+                notes += UR_M3_volstat;
+            }
+
+            if (HUVM_role.size() > 0)
+            {
+                if (notes.size() > 0 ) notes += " + ";
+                notes += HUVM_role;
             }
         }
-    }
-    else
-    {
-        // vendor is not Hitachi
-        HitachiProduct=HDSProduct=SerialNumber=Port=LDEV="";
+        else
+        {
+            HitachiProduct="Unknown Hitachi Product";
+            HDSProduct="Unknown Hitachi product";
+            SerialNumber="";
+        }
     }
 
     if (LDEV_type!=CMD_DEV)
@@ -902,9 +1408,9 @@ bool LUN_discovery::get_page(unsigned char* data_buffer, int data_buffer_size, u
         if (scsi_header.masked_status || scsi_header.host_status || scsi_header.driver_status)
         {
             msg << "     "
-                << "SCSI status=0x" << std::hex << std::setw(2) << std::setfill('0') << ((int)scsi_header.status)
-                << ", host_status=0x" << std::hex << std::setw(2) << std::setfill('0') << ((int)scsi_header.host_status)
-                << ", driver_status=0x" << std::hex << std::setw(2) << std::setfill('0') << ((int)scsi_header.driver_status)
+                << "SCSI status=0x" << std::hex << std::setw(2) << std::setfill('0') << ((unsigned int)scsi_header.status)
+                << ", host_status=0x" << std::hex << std::setw(2) << std::setfill('0') << ((unsigned int)scsi_header.host_status)
+                << ", driver_status=0x" << std::hex << std::setw(2) << std::setfill('0') << ((unsigned int)scsi_header.driver_status)
                 << std::endl;
         }
         if (sense_bytes_received > 0)
@@ -916,4 +1422,71 @@ bool LUN_discovery::get_page(unsigned char* data_buffer, int data_buffer_size, u
         return false;
     }
     return true;
+}
+
+std::string decode_hex_serial_number(const unsigned char* p)
+{
+    if ( ((*p) != '5') || ((*(p+1)) != '0') )
+    {
+        std::ostringstream o;
+        o << "<Error> LUN_discovery - Invalid RAID subsystem 8 hex character format serial number " + printableAndHex(p,8) + " - "
+            << "did not start with \"50\"."
+            << "  Problem occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+        throw  std::runtime_error(o.str());
+    }
+
+    unsigned int s {0};
+
+    for (unsigned int i = 3; i <= 7; i++)
+    {
+        s = s << 4;
+        switch (*(p+i))
+        {
+            case '0': s = s + 0; break;
+            case '1': s = s + 1; break;
+            case '2': s = s + 2; break;
+            case '3': s = s + 3; break;
+            case '4': s = s + 4; break;
+            case '5': s = s + 5; break;
+            case '6': s = s + 6; break;
+            case '7': s = s + 7; break;
+            case '8': s = s + 8; break;
+            case '9': s = s + 9; break;
+            case 'a':
+            case 'A': s = s + 10; break;
+            case 'b':
+            case 'B': s = s + 11; break;
+            case 'c':
+            case 'C': s = s + 12; break;
+            case 'd':
+            case 'D': s = s + 13; break;
+            case 'e':
+            case 'E': s = s + 14; break;
+            case 'f':
+            case 'F': s = s + 15; break;
+            default:
+            {
+                std::ostringstream o;
+                o << "<Error> LUN_discovery - Invalid RAID subsystem 8 hex character format serial number " + printableAndHex(p,8) + " - "
+                    << "character number " << i << " (starting from zero) was not an ASCII representation of a hex digit."
+                    << "  Problem occured at line " << __LINE__ << " of " << __FILE__ << std::endl;
+                throw  std::runtime_error(o.str());
+            }
+        }
+    }
+
+    switch (*(p+2))
+    {
+        case ' ': break;               // RAID700 or earlier
+        case '2': s += 200000; break;  // RAID800
+        case '3': s += 300000; break;  // HM800
+        case '4': s += 400000; break;
+        case '5': s += 500000; break;
+        case '6': s += 600000; break;
+    }
+    {
+        std::ostringstream o;
+        o << s;
+        return (o.str());
+    }
 }

@@ -84,7 +84,9 @@ typedef struct Hitachi_RAID_SI_format {
 		// "6001" RAID 600
 		// "7001" RAID 700
 		// "8001" RAID 800
+		// "7301" HM700
 		// "8301" HM800
+		// "8801" HM850
 
 	// bytes 36-47 (12 bytes) LDEV identifier
 	char fifty[2]; // "50"
@@ -201,7 +203,8 @@ typedef struct Hitachi_page_E0 {
 	char VendorID[8]; // "HITACHI "
 	char LocalID[8]; // "-HI-CMD-"
 	char ProductID[4]; // e.g. "R800" for RAID800
-	char reserved_36_to_39[4];
+	unsigned char sub_model_ID;
+	char reserved_37_to_39[3];
 	unsigned char HostGroup[2]; // binary info
 	char reserved_42_to_55[14];
 	char NodeSN[8]; // ASCII representation of decimal value, serial number

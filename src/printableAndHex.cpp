@@ -27,9 +27,9 @@ using namespace std;
 
 #include "../include/printableAndHex.h"
 
-std::string printableAsDot (unsigned char* p, int length) {
+std::string printableAsDot (const unsigned char* p, int length) {
 	// AIV 2013-04-24
-	unsigned char* q = p;
+	const unsigned char* q = p;
 	std::stringstream os;
 	for (int i=0;i<length;i++){
 		if (isprint(*q)) os << *q;
@@ -39,19 +39,19 @@ std::string printableAsDot (unsigned char* p, int length) {
 	return os.str();
 }
 
-std::string printAsHex (unsigned char* p, int length){
-	unsigned char* q = p;
+std::string printAsHex (const unsigned char* p, int length){
+	const unsigned char* q = p;
 	std::ostringstream os;
 		q=p;
 		for (int i=0;i<length;i++){
-			os << std::hex << std::setw(2) << std::setfill('0') << (int)*q;
+			os << std::hex << std::setw(2) << std::setfill('0') << (unsigned int)*q;
 			q++;
 			if ((i%4 == 3) && (i != (length-1))) os << ' ';
 		}
 	return os.str();
 }
 
-void display_memory_contents(ostream& o, unsigned char*p, int length, int perlinemax, std::string eachlineprefix) {
+void display_memory_contents(ostream& o, const unsigned char*p, int length, int perlinemax, std::string eachlineprefix) {
 	// AIV 2013-04-30
 	if (length<=perlinemax) {
 		o << eachlineprefix << " \"" << printableAsDot(p, length) << "\" (" << printAsHex(p, length) << ')';
@@ -60,7 +60,7 @@ void display_memory_contents(ostream& o, unsigned char*p, int length, int perlin
 		int current_offset=0;
 		int bytes_to_go = length;
 		int bytes_this_round;
-		unsigned char* q=p;
+		const unsigned char* q=p;
 		while (bytes_to_go>0) {
 			if (bytes_to_go > perlinemax) bytes_this_round = perlinemax;
 			else bytes_this_round=bytes_to_go;
@@ -75,6 +75,6 @@ void display_memory_contents(ostream& o, unsigned char*p, int length, int perlin
 	}
 }
 
-std::string printableAndHex(unsigned char*p, int length) {
+std::string printableAndHex(const unsigned char*p, int length) {
 	return std::string("\"") + printableAsDot(p,length) + std::string("\" (") + printAsHex(p,length) + std::string(")");
 }

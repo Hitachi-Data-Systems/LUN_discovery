@@ -26,8 +26,19 @@ Executable to issue SCSI Inquiry commands to a LUN, and to decode and print the 
 
 Executable to issue SCSI Inquiry commands to a LUN, and to build a custom string specified by command line parameters, incorporating decoded LUN attributes.
 
+## binary executables
+LUN_discovery is built on Linux using the Codeblocks IDE.  The binaries in the bin folder were built on a RHEL 6 system with g++ 4.92 and associated libstdc++.   They are statically linked with libstdc++ and dynamically linked with libc.
 
 ## License
 
 [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 
+
+## Contributors
+
+ian.vogelesang@hds.com
+
+
+## build with
+
+[codeblocks](http://codeblocks.org)

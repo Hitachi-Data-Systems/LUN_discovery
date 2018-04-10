@@ -66,7 +66,42 @@ int main(int argc, char * argv[]) {
 		, "-maxLBA" , "-sizeBytes", "-sizeMB", "-sizeMiB"
 		, "-sizeGB", "-sizeGiB", "-sizeTB", "-sizeTiB"
 		, "-hba", "-probehost"
-
+		, "-port_wwn", "-node_wwn"
+		, "-protect" // T10_PI
+		, "-TC_volstat", "-SI_M0_volstat", "-SI_M1_volstat", "-SI_M2_volstat"
+		, "-UR_M0_volstat" , "-UR_M1_volstat", "-UR_M2_volstat", "-UR_M3_volstat", "-UR_M4_volstat", "-UR_M5_volstat", "-UR_M6_volstat", "-UR_M7_volstat"
+		, "-SSID", "-CU", "-consistency_group"
+		, "-HUVM_role"
+		, "-physical_product"
+        , "-physical_product_revision"
+        , "-physical_product_ID"  // 4 character, e.g. R800
+        , "-physical_submodel"
+        , "-physical_serial"
+        , "-physical_LDEV"
+        , "-physical_LDEV_type"
+        , "-physical_PG"
+        , "-physical_RAID_level"
+        , "-physical_Pool_ID"
+        , "-physical_nickname"
+        , "-physical_SSID"
+        , "-physical_CU"
+        , "-physical_consistency_group"
+        , "-GAD_remote_serial"
+        , "-GAD_remote_LDEV"
+        , "-write_same"
+        , "-page_size_sectors"
+        , "-zero_reclaim_starting_sector"
+        , "-pages_in_use"
+        , "-pool_threshold"
+        , "-available_threshold"
+        , "-pool_usage"
+        , "-pool_remaining_MiB"
+        , "-total_pool_MiB"
+        , "-optimal_write_same_granularity_sectors"
+        , "-physical_pool_usage"
+        , "-pool_saving_rate"
+        , "-pool_physical_remaining_MiB"
+        , "-pool_total_physical_MiB"
 	};
 	int number_of_options = extent<decltype(options)>::value; // new in -std=c++11
 	std::queue<std::string> selected_options;
@@ -179,6 +214,51 @@ int main(int argc, char * argv[]) {
 			else if (o==std::string("-hitachivpd")) std::cout << p_LUN->getHitachiVPD();
 			else if (o==std::string("-hba")) std::cout << p_LUN->getBusNumber();
 			else if (o==std::string("-probehost")) std::cout << p_LUN->getProbeHost();
+			else if (o==std::string("-port_wwn")) std::cout << p_LUN->get_port_wwn();
+			else if (o==std::string("-node_wwn")) std::cout << p_LUN->get_node_wwn();
+			else if (o==std::string("-protect")) std::cout << p_LUN->get_protect();
+			else if (o==std::string("-TC_volstat")) std::cout << p_LUN->get_TC_volstat();
+			else if (o==std::string("-SI_M0_volstat")) std::cout << p_LUN->get_SI_M0_volstat();
+			else if (o==std::string("-SI_M1_volstat")) std::cout << p_LUN->get_SI_M1_volstat();
+			else if (o==std::string("-SI_M2_volstat")) std::cout << p_LUN->get_SI_M2_volstat();
+			else if (o==std::string("-UR_M0_volstat")) std::cout << p_LUN->get_UR_M0_volstat();
+			else if (o==std::string("-UR_M1_volstat")) std::cout << p_LUN->get_UR_M1_volstat();
+			else if (o==std::string("-UR_M2_volstat")) std::cout << p_LUN->get_UR_M2_volstat();
+			else if (o==std::string("-UR_M3_volstat")) std::cout << p_LUN->get_UR_M3_volstat();
+			else if (o==std::string("-SSID")) std::cout << p_LUN->get_SSID();
+			else if (o==std::string("-CU")) std::cout << p_LUN->get_CU();
+			else if (o==std::string("-consistency_group")) std::cout << p_LUN->get_consistency_group();
+			else if (o==std::string("-HUVM_role")) std::cout << p_LUN->get_HUVM_role();
+			else if (o==std::string("-physical_product")) std::cout << p_LUN->get_physical_product();
+			else if (o==std::string("-physical_product_revision")) std::cout << p_LUN->get_physical_product_revision();
+			else if (o==std::string("-physical_product_ID")) std::cout << p_LUN->get_physical_product_ID();
+			else if (o==std::string("-physical_submodel")) std::cout << p_LUN->get_physical_submodel();
+			else if (o==std::string("-physical_serial")) std::cout << p_LUN->get_physical_serial();
+			else if (o==std::string("-physical_LDEV")) std::cout << p_LUN->get_physical_LDEV();
+			else if (o==std::string("-physical_LDEV_type")) std::cout << p_LUN->get_physical_LDEV_type();
+			else if (o==std::string("-physical_PG")) std::cout << p_LUN->get_physical_PG();
+			else if (o==std::string("-physical_RAID_level")) std::cout << p_LUN->get_physical_RAID_level();
+			else if (o==std::string("-physical_Pool_ID")) std::cout << p_LUN->get_physical_Pool_ID();
+			else if (o==std::string("-physical_nickname")) std::cout << p_LUN->get_physical_nickname();
+			else if (o==std::string("-physical_SSID")) std::cout << p_LUN->get_physical_SSID();
+			else if (o==std::string("-physical_CU")) std::cout << p_LUN->get_physical_CU();
+			else if (o==std::string("-physical_consistency_group")) std::cout << p_LUN->get_physical_consistency_group();
+			else if (o==std::string("-GAD_remote_serial")) std::cout << p_LUN->get_GAD_remote_serial();
+			else if (o==std::string("-GAD_remote_LDEV")) std::cout << p_LUN->get_GAD_remote_LDEV();
+			else if (o==std::string("-write_same")) std::cout << p_LUN->get_write_same();
+			else if (o==std::string("-page_size_sectors")) std::cout << p_LUN->get_page_size_sectors();
+			else if (o==std::string("-zero_reclaim_starting_sector")) std::cout << p_LUN->get_zero_reclaim_starting_sector();
+			else if (o==std::string("-pages_in_use")) std::cout << p_LUN->get_pages_in_use();
+			else if (o==std::string("-pool_threshold")) std::cout << p_LUN->get_pool_threshold();
+			else if (o==std::string("-available_threshold")) std::cout << p_LUN->get_available_threshold();
+			else if (o==std::string("-pool_usage")) std::cout << p_LUN->get_pool_usage();
+			else if (o==std::string("-pool_remaining_MiB")) std::cout << p_LUN->get_pool_remaining_MiB();
+			else if (o==std::string("-total_pool_MiB")) std::cout << p_LUN->get_total_pool_MiB();
+			else if (o==std::string("-optimal_write_same_granularity_sectors")) std::cout << p_LUN->get_optimal_write_same_granularity_sectors();
+			else if (o==std::string("-physical_pool_usage")) std::cout << p_LUN->get_physical_pool_usage();
+			else if (o==std::string("-pool_saving_rate")) std::cout << p_LUN->get_pool_saving_rate();
+			else if (o==std::string("-pool_physical_remaining_MiB")) std::cout << p_LUN->get_pool_physical_remaining_MiB();
+			else if (o==std::string("-pool_total_physical_MiB")) std::cout << p_LUN->get_pool_total_physical_MiB();
 			else std::cout << "Internal logic error - option \"" << o << "\" not found" << std::endl;
 		}
 	}

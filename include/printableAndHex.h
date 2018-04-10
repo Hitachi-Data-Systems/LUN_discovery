@@ -18,8 +18,8 @@
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
 //          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
 
-std::string printableAsDot(unsigned char* p, int length);
-std::string printAsHex(unsigned char* p, int length);
-std::string printableAndHex(unsigned char* p, int length);
-void display_memory_contents(std::ostream& o, unsigned char*p, int length, int perlinemax=16, std::string eachlineprefix="");
+std::string printableAsDot(const unsigned char* p, int length);
+std::string printAsHex(const unsigned char* p, int length);
+std::string printableAndHex(const unsigned char* p, int length);
+void display_memory_contents(std::ostream& o, const unsigned char*p, int length, int perlinemax=16, std::string eachlineprefix="");
 
