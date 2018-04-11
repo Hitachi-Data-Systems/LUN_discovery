@@ -1,3 +1,5 @@
 .objs/*
 bin/*
+LUN_discovery.layout
+LUN_discovery.depend
 sample_output/*
