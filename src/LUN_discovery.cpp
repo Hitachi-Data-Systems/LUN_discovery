@@ -286,8 +286,12 @@ void LUN_discovery::showall(ostream& o)
 
 LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
 {
-    HitachiProduct=HDSProduct=SerialNumber=Port=LDEV=VendorUnprintableAsDot=ProductUnprintableAsDot=ProductRevisionUnprintableAsDot=VendorSpecificUnprintableAsDotWithHex
-                                           =(std::string("<SCSI Inquiry failed for \"") + LUNname + std::string("\">"));
+    HitachiProduct = HDSProduct = SerialNumber = Port = LDEV
+        = ProductRevisionUnprintableAsDot = VendorSpecificUnprintableAsDotWithHex = ProductUnprintableAsDot
+        = std::string("");
+    VendorUnprintableAsDot
+        = std::string("<SCSI Inquiry failed for \"") + LUNname + std::string("\".  \"InquireAbout\" and \"lun2string\" must be owned by root and setuid to be authorized to issue SCSI Inquiry commands.>");
+
 
     char hostnamebuf[256];
     hostnamebuf[255]=0;
@@ -300,7 +304,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
         hostname=hostnamebuf;
     }
 
-    HitachiVPD = VendorUnprintableAsDot = ProductUnprintableAsDot = ProductRevisionUnprintableAsDot = "<no data>";
+    HitachiVPD = VendorUnprintableAsDot = ProductUnprintableAsDot = ProductRevisionUnprintableAsDot = "";
     std::string errmsg;
     if ((fd = open64(LUNname.c_str(), O_RDWR + O_LARGEFILE + O_DIRECT)) < 0)
     {
@@ -467,7 +471,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
     ProductRevisionUnprintableAsDot = printableAsDot(d+REVISION,REVISION_LEN);
     VendorSpecificUnprintableAsDotWithHex = printableAndHex(d+VENDOR_SPECIFIC,VENDOR_SPECIFIC_LEN);
 
-    HitachiProduct=HDSProduct=SerialNumber=Port=LDEV=(std::string("<not Hitachi LUN>"));
+    HitachiProduct=HDSProduct=SerialNumber=Port=LDEV=(std::string(""));
 
     // now get Vital Product Data page 0x83
     haveVpdPage = get_page( (unsigned char*)&(buf_83_vpd[0]), sizeof(buf_83_vpd), vpd_cmd, "page 0x83 with EVPD=1", &vpd_sense_bytes);
