@@ -984,7 +984,8 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
 
                 break;
             default:
-                pgstr << "RAID subsystem - unknown RAID level = 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[96+2] << std::endl;
+//                pgstr << "RAID subsystem - unknown RAID level = 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) def_buf[96+2] << std::endl;
+                pgstr << "phantom LUN" << std::endl;
                 constructor_log += pgstr.str();
                 LDEV_type=pgstr.str();
                 RAIDlevel=pgstr.str();
