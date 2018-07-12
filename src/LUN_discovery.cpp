@@ -745,7 +745,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                     }
                 }
             }
-            else if (E0_buf.ProductID == std::string("HM82"))
+            else if (E0_buf.ProductID == std::string("HM82") || E0_buf.ProductID == std::string("HM82!"))
             {
                 switch (E0_buf.sub_model_ID)
                 {
