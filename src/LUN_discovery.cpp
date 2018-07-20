@@ -662,7 +662,9 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
 
             // subsystem type RAID
 
-            if (E0_buf.ProductID == std::string("R800"))
+            std::string PrID = E0_buf.ProductID;
+
+            if (PrID.substr(0,4) == std::string("R800"))
             {
                 switch (E0_buf.sub_model_ID)
                 {
