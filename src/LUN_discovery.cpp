@@ -689,24 +689,24 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                     }
                 }
             }
-            else if (E0_buf.ProductID == std::string("HM86"))
+            else if (PrID.substr(0,4) == std::string("HM86"))
             {
                 switch (E0_buf.sub_model_ID)
                 {
                     case 0x00:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM800H";
                         HDSProduct = "VSP G800";
                         break;
                     case 0x40:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM800H";
                         HDSProduct = "VSP F800";
                         break;
                     case 0x20:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850H";
                         HDSProduct = "VSP G900";
                         break;
                     case 0x60:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850H";
                         HDSProduct = "VSP F900";
                         break;
                     default:
@@ -718,24 +718,24 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                     }
                 }
             }
-            else if (E0_buf.ProductID == std::string("HM84"))
+            else if (PrID.substr(0,4) == std::string("HM84"))
             {
                 switch (E0_buf.sub_model_ID)
                 {
                     case 0x00:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM800M";
                         HDSProduct = "VSP G400/G600";
                         break;
                     case 0x40:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM800M";
                         HDSProduct = "VSP F400/F600";
                         break;
                     case 0x23:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850M";
                         HDSProduct = "VSP G700";
                         break;
                     case 0x63:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850M";
                         HDSProduct = "VSP F700";
                         break;
                     default:
@@ -747,36 +747,36 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                     }
                 }
             }
-            else if (E0_buf.ProductID == std::string("HM82") || E0_buf.ProductID == std::string("HM82!"))
+            else if (PrID.substr(0,4) == std::string("HM82"))
             {
                 switch (E0_buf.sub_model_ID)
                 {
                     case 0x00:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM800S";
                         HDSProduct = "VSP G200";
                         break;
                     case 0x20:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850S0";
                         HDSProduct = "VSP G150";
                         break;
                     case 0x21:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850S1";
                         HDSProduct = "VSP G350";
                         break;
                     case 0x22:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850S2";
                         HDSProduct = "VSP G370";
                         break;
                     case 0x24:
-                        HitachiProduct = "HM800";
-                        HDSProduct = "VSP G90";
+                        HitachiProduct = "HM850XS";
+                        HDSProduct = "VSP G130";
                         break;
                     case 0x61:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850S1";
                         HDSProduct = "VSP F350";
                         break;
                     case 0x62:
-                        HitachiProduct = "HM800";
+                        HitachiProduct = "HM850S2";
                         HDSProduct = "VSP F370";
                         break;
                     default:
