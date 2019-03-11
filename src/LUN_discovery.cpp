@@ -664,7 +664,28 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
 
             std::string PrID = E0_buf.ProductID;
 
-            if (PrID.substr(0,4) == std::string("R800"))
+            if (PrID.substr(0,4) == std::string("R900"))
+            {
+                switch (E0_buf.sub_model_ID)
+                {
+                    case 0x00:
+                        HitachiProduct = "Jupiter"; // "RAID900";
+                        HDSProduct = "Europa"; // "VSP 5100 / VSP 5500"
+                        break;
+                    case 0x01:
+                        HitachiProduct = "Jupiter"; // "RAID900";
+                        HDSProduct = "Ganymede"; // Don't know Hitachi Vantara name yet
+                        break;
+                    default:
+                    {
+                        std::ostringstream o;
+                        o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
+                            << " for Product ID \"R900\".";
+                        HitachiProduct = HDSProduct = o.str();
+                    }
+                }
+            }
+            else if (PrID.substr(0,4) == std::string("R800"))
             {
                 switch (E0_buf.sub_model_ID)
                 {
