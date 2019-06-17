@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Author: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//          Contact me (Ian) by email at ian.vogelesang@hitachivantara.com and as time permits, I'll help on a best efforts basis.
 
 #define _LARGE_FILE_API
 #include <iostream>
@@ -186,7 +186,8 @@ int main(int argc, char * argv[]) {
 		else if (o==std::string("-space")) separator=std::string(" ");
 		else {	first_option=false;
 			if ( (o.length() > 2) && (o.at(0)=='\"') && (o.at(o.length()-1)=='\"')) std::cout<<(o.erase(o.length()-1,1)).erase(0,1);
-			else if (o==std::string("-subsystemtype")) std::cout << p_LUN->getHDSProduct();
+			else if (o==std::string("-subsystemtype")) std::cout << p_LUN->getHVProduct();
+			else if (o==std::string("-hitachivantaratype")) std::cout << p_LUN->getHVProduct();
 			else if (o==std::string("-hitachitype")) std::cout << p_LUN->getHitachiProduct();
 			else if (o==std::string("-serialnumber")) std::cout << p_LUN->getSerialNumber();
 			else if (o==std::string("-port")) std::cout << p_LUN->getPort();

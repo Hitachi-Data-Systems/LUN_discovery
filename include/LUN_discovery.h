@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Author: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//          Contact me (Ian) by email at ian.vogelesang@hitachivantara.com and as time permits, I'll help on a best efforts basis.
 
 
 #pragma once
@@ -179,7 +179,7 @@ private:
 	} scsi_id;
 	int LU_Number;
 	std::string scsi_id_string{""};
-	std::string HitachiProduct, HDSProduct, SerialNumber, Port, LDEV, LDEV_no_colon;
+	std::string HitachiProduct, HVProduct, SerialNumber, Port, LDEV, LDEV_no_colon;
 	std::string VendorUnprintableAsDot , ProductUnprintableAsDot;
 	std::string ProductRevisionUnprintableAsDot , VendorSpecificUnprintableAsDotWithHex;
 	std::string HitachiVPD;
@@ -207,7 +207,7 @@ public:
 	inline int getLU_Number() {return LU_Number;}
 	inline std::string getLUNname() {return LUNname;}
 	inline std::string getHostname() {return hostname;}
-	inline std::string getHDSProduct() {return HDSProduct;}
+	inline std::string getHVProduct() {return HVProduct;}
 	inline std::string getHitachiProduct() {return HitachiProduct;}
 	inline std::string getSerialNumber() {return SerialNumber;}
 	inline std::string getPort() {return Port;}

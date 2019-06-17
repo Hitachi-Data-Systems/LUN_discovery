@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Author: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//          Contact me (Ian) by email at ian.vogelesang@hitachivantara.com and as time permits, I'll help on a best efforts basis.
 
 // LUN_discovery.cpp
 
@@ -104,23 +104,23 @@ void LUN_discovery::printheaders(ostream& o)
 
 std::string LUN_discovery::printheaders()
 {
-    return std::string("hostname,SCSI Bus Number (HBA),LUN Name,Hitachi Product,HDS Product,Product Revision,Serial Number,Port,LUN 0-255,LDEV,Nickname,LDEV type")
+    return std::string("hostname,SCSI Bus Number (HBA),LUN Name,Hitachi Product,Hitachi Vantara Product,Product Revision,Serial Number,Port,LUN 0-255,LDEV,Nickname,LDEV type")
            + std::string(",notes")
            + std::string(",RAID level,Parity Group,Pool ID,CLPR,Max LBA")
            + std::string(",Size MB,Size MiB,Size GB,Size GiB,Size TB,Size TiB")
            + std::string(",Vendor,Product,Product Revision,port_wwn,node_wwn,protect")
            + std::string(",SSID,CU,consistency_group")
            + std::string(",TC")
-           + std::string(",MRCF_M0,MRCF_M1,MRCF_M2")
-           + std::string(",HORC_M0,HORC_M1,HORC_M2,HORC_M3")
-           + std::string(",HUVM_role,physical_product,physical_product_revision,physical_product_ID,physical_submodel,physical_serial,physical_LDEV,physical_LDEV_type"
-            ",physical_PG,physical_RAID_level, physical_Pool_ID,physical_nickname,physical_SSID,physical_CU,physical_consistency_group"
-            ",GAD_remote_serial,GAD_remote_LDEV"
-            ",write_same,page_size_sectors,zero_reclaim_starting_sector"
-            ",pages_in_use,pool_threshold,available_threshold"
-            ",pool_usage,pool_remaining_MiB,total_pool_MiB,optimal_write_same_granularity_sectors"
-            ",physical_pool_usage,pool_saving_rate,pool_physical_remaining_MiB,pool_total_physical_MiB")
-           + std::string(",SCSI_IOCTL_PROBE_HOST");
+           + std::string(",MRCF MUN 0,MRCF MUN 1,MRCF MUN 2")
+           + std::string(",HORC MUN 0,HORC MUN 1,HORC MUN 2,HORC MUN 3")
+           + std::string(",HUVM role,physical product,physical product revision,physical product ID,physical submodel,physical serial,physical LDEV,physical LDEV type"
+            ",physical PG,physical RAID level,physical Pool ID,physical nickname,physical SSID,physical CU,physical consistency group"
+            ",GAD remote serial,GAD remote LDEV"
+            ",write same,page size sectors,zero reclaim starting sector"
+            ",pages in use,pool threshold,available threshold"
+            ",pool usage,pool remaining MiB,total pool MiB,optimal write same granularity sectors"
+            ",physical pool usage,pool saving rate,pool physical remaining MiB,pool total physical MiB")
+           + std::string(",SCSI IOCTL PROBE HOST");
 }
 
 void LUN_discovery::printdata(ostream& o)
@@ -131,7 +131,7 @@ void LUN_discovery::printdata(ostream& o)
 std::string LUN_discovery::printdata()
 {
     ostringstream os;
-    os << hostname << ',' << bus_number << ',' << LUNname << ',' << HitachiProduct << ',' << HDSProduct
+    os << hostname << ',' << bus_number << ',' << LUNname << ',' << HitachiProduct << ',' << HVProduct
        << ',' << ProductRevisionUnprintableAsDot
        << ',' << SerialNumber
        << ',' << Port << ',' << LU_Number << ',' << LDEV << ',' << nickname << ',' << LDEV_type << ',' << notes << ',' << RAIDlevel << ','
@@ -286,7 +286,7 @@ void LUN_discovery::showall(ostream& o)
 
 LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
 {
-    HitachiProduct = HDSProduct = SerialNumber = Port = LDEV
+    HitachiProduct = HVProduct = SerialNumber = Port = LDEV
         = ProductRevisionUnprintableAsDot = VendorSpecificUnprintableAsDotWithHex = ProductUnprintableAsDot
         = std::string("");
     VendorUnprintableAsDot
@@ -471,7 +471,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
     ProductRevisionUnprintableAsDot = printableAsDot(d+REVISION,REVISION_LEN);
     VendorSpecificUnprintableAsDotWithHex = printableAndHex(d+VENDOR_SPECIFIC,VENDOR_SPECIFIC_LEN);
 
-    HitachiProduct=HDSProduct=SerialNumber=Port=LDEV=(std::string(""));
+    HitachiProduct=HVProduct=SerialNumber=Port=LDEV=(std::string(""));
 
     // now get Vital Product Data page 0x83
     haveVpdPage = get_page( (unsigned char*)&(buf_83_vpd[0]), sizeof(buf_83_vpd), vpd_cmd, "page 0x83 with EVPD=1", &vpd_sense_bytes);
@@ -488,13 +488,13 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
     if (VendorUnprintableAsDot!=std::string(VENDORHITACHI))
     {
         // vendor is not Hitachi
-        HitachiProduct=HDSProduct=SerialNumber=Port=LDEV="";
+        HitachiProduct=HVProduct=SerialNumber=Port=LDEV="";
     }
     else
     {
         // vendor is Hitachi
         isHitachi=true;
-        HitachiProduct=HDSProduct=SerialNumber=Port=LDEV=(std::string("<Hitachi LUN \"") + LUNname + std::string("\" - not recognized Hitachi subsystem type>"));
+        HitachiProduct=HVProduct=SerialNumber=Port=LDEV=(std::string("<Hitachi LUN \"") + LUNname + std::string("\" - not recognized Hitachi subsystem type>"));
 
         haveE0page = get_page( (unsigned char*)&E0_buf, sizeof(E0_buf), E0_cmd, "Hitachi-specific page 0xE0", &page_E0_sense_bytes);
 
@@ -595,63 +595,63 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
             {
 
                 HitachiProduct="DF850MH";
-                HDSProduct="HUS150";
+                HVProduct="HUS150";
 
             }
             else if (SNprefix==std::string("92"))
             {
 
                 HitachiProduct="DF850S";
-                HDSProduct="HUS130";
+                HVProduct="HUS130";
 
             }
             else if (SNprefix==std::string("91"))
             {
 
                 HitachiProduct="DF850XS";
-                HDSProduct="HUS110";
+                HVProduct="HUS110";
 
             }
             else if (SNprefix==std::string("87"))
             {
 
                 HitachiProduct="DF800H";
-                HDSProduct="AMS2500";
+                HVProduct="AMS2500";
 
             }
             else if (SNprefix==std::string("85"))
             {
 
                 HitachiProduct="DF800M";
-                HDSProduct="AMS2300";
+                HVProduct="AMS2300";
 
             }
             else if (SNprefix==std::string("83"))
             {
 
                 HitachiProduct="DF800S";
-                HDSProduct="AMS2100";
+                HVProduct="AMS2100";
 
             }
             else if (SNprefix==std::string("77"))
             {
 
                 HitachiProduct="DF700H";
-                HDSProduct="AMS1000";
+                HVProduct="AMS1000";
 
             }
             else if (SNprefix==std::string("75"))
             {
 
                 HitachiProduct="DF700M";
-                HDSProduct="AMS500";
+                HVProduct="AMS500";
 
 
             }
             else
             {
                 HitachiProduct="NotRecognized";
-                HDSProduct="";
+                HVProduct="";
             }
             // subsystem type DF
 
@@ -669,19 +669,19 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 switch (E0_buf.sub_model_ID)
                 {
                     case 0x00:
-                        HitachiProduct = "Jupiter"; // "RAID900";
-                        HDSProduct = "Europa"; // "VSP 5100 / VSP 5500"
+                        HitachiProduct = "Jupiter"; // will become "RAID900";
+                        HVProduct = "Europa"; // "VSP 5100 / VSP 5500"
                         break;
                     case 0x01:
-                        HitachiProduct = "Jupiter"; // "RAID900";
-                        HDSProduct = "Ganymede"; // Don't know Hitachi Vantara name yet
+                        HitachiProduct = "Jupiter"; // will become"RAID900";
+                        HVProduct = "Ganymede"; // Don't know Hitachi Vantara name yet
                         break;
                     default:
                     {
                         std::ostringstream o;
                         o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
                             << " for Product ID \"R900\".";
-                        HitachiProduct = HDSProduct = o.str();
+                        HitachiProduct = HVProduct = o.str();
                     }
                 }
             }
@@ -691,22 +691,22 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 {
                     case 0x00:
                         HitachiProduct = "RAID800";
-                        HDSProduct = "VSP G1000";
+                        HVProduct = "VSP G1000";
                         break;
                     case 0x80:
                         HitachiProduct = "RAID800";
-                        HDSProduct = "VSP G1500";
+                        HVProduct = "VSP G1500";
                         break;
                     case 0xC0:
                         HitachiProduct = "RAID800";
-                        HDSProduct = "VSP F1500";
+                        HVProduct = "VSP F1500";
                         break;
                     default:
                     {
                         std::ostringstream o;
                         o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
                             << " for Product ID \"R800\".";
-                        HitachiProduct = HDSProduct = o.str();
+                        HitachiProduct = HVProduct = o.str();
                     }
                 }
             }
@@ -716,26 +716,26 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 {
                     case 0x00:
                         HitachiProduct = "HM800H";
-                        HDSProduct = "VSP G800";
+                        HVProduct = "VSP G800";
                         break;
                     case 0x40:
                         HitachiProduct = "HM800H";
-                        HDSProduct = "VSP F800";
+                        HVProduct = "VSP F800";
                         break;
                     case 0x20:
                         HitachiProduct = "HM850H";
-                        HDSProduct = "VSP G900";
+                        HVProduct = "VSP G900";
                         break;
                     case 0x60:
                         HitachiProduct = "HM850H";
-                        HDSProduct = "VSP F900";
+                        HVProduct = "VSP F900";
                         break;
                     default:
                     {
                         std::ostringstream o;
                         o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
                             << " for Product ID \"HM86\".";
-                        HitachiProduct = HDSProduct = o.str();
+                        HitachiProduct = HVProduct = o.str();
                     }
                 }
             }
@@ -745,26 +745,26 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 {
                     case 0x00:
                         HitachiProduct = "HM800M";
-                        HDSProduct = "VSP G400/G600";
+                        HVProduct = "VSP G400/G600";
                         break;
                     case 0x40:
                         HitachiProduct = "HM800M";
-                        HDSProduct = "VSP F400/F600";
+                        HVProduct = "VSP F400/F600";
                         break;
                     case 0x23:
                         HitachiProduct = "HM850M";
-                        HDSProduct = "VSP G700";
+                        HVProduct = "VSP G700";
                         break;
                     case 0x63:
                         HitachiProduct = "HM850M";
-                        HDSProduct = "VSP F700";
+                        HVProduct = "VSP F700";
                         break;
                     default:
                     {
                         std::ostringstream o;
                         o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
                             << " for Product ID \"HM84\".";
-                        HitachiProduct = HDSProduct = o.str();
+                        HitachiProduct = HVProduct = o.str();
                     }
                 }
             }
@@ -774,38 +774,38 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 {
                     case 0x00:
                         HitachiProduct = "HM800S";
-                        HDSProduct = "VSP G200";
+                        HVProduct = "VSP G200";
                         break;
                     case 0x20:
                         HitachiProduct = "HM850S0";
-                        HDSProduct = "VSP G150";
+                        HVProduct = "VSP G150";
                         break;
                     case 0x21:
                         HitachiProduct = "HM850S1";
-                        HDSProduct = "VSP G350";
+                        HVProduct = "VSP G350";
                         break;
                     case 0x22:
                         HitachiProduct = "HM850S2";
-                        HDSProduct = "VSP G370";
+                        HVProduct = "VSP G370";
                         break;
                     case 0x24:
                         HitachiProduct = "HM850XS";
-                        HDSProduct = "VSP G130";
+                        HVProduct = "VSP G130";
                         break;
                     case 0x61:
                         HitachiProduct = "HM850S1";
-                        HDSProduct = "VSP F350";
+                        HVProduct = "VSP F350";
                         break;
                     case 0x62:
                         HitachiProduct = "HM850S2";
-                        HDSProduct = "VSP F370";
+                        HVProduct = "VSP F370";
                         break;
                     default:
                     {
                         std::ostringstream o;
                         o << "Unknown submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
                             << " for Product ID \"HM82\".";
-                        HitachiProduct = HDSProduct = o.str();
+                        HitachiProduct = HVProduct = o.str();
                     }
                 }
             }
@@ -814,7 +814,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                     )
             {
                 HitachiProduct = "RAID700";
-                HDSProduct = "VSP";
+                HVProduct = "VSP";
             }
             else
             {
@@ -822,7 +822,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 o << "Unknown \"RAID\" (Hitachi enterprise family) subsystem Product ID \"" << (E0_buf.ProductID) << "\""
                     << " submodel 0x" << std::hex << std::setw(2) << std::setfill('0') << (unsigned int) E0_buf.sub_model_ID
                     << ".";
-                HitachiProduct = HDSProduct = o.str();
+                HitachiProduct = HVProduct = o.str();
             }
 
             if (LDEV.length() == 4)
@@ -1328,7 +1328,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
         else
         {
             HitachiProduct="Unknown Hitachi Product";
-            HDSProduct="Unknown Hitachi product";
+            HVProduct="Unknown Hitachi product";
             SerialNumber="";
         }
     }

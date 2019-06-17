@@ -13,10 +13,10 @@
 //   License for the specific language governing permissions and limitations
 //   under the License.
 //
-//Author: Allart Ian Vogelesang <ian.vogelesang@hds.com>
+//Author: Allart Ian Vogelesang <ian.vogelesang@hitachivantara.com>
 //
 //Support:  "ivy" is not officially supported by Hitachi Data Systems.
-//          Contact me (Ian) by email at ian.vogelesang@hds.com and as time permits, I'll help on a best efforts basis.
+//          Contact me (Ian) by email at ian.vogelesang@hitachivantara.com and as time permits, I'll help on a best efforts basis.
 
 #define _LARGE_FILE_API
 #include <iostream>
