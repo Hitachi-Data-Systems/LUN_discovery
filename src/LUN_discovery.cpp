@@ -104,22 +104,22 @@ void LUN_discovery::printheaders(ostream& o)
 
 std::string LUN_discovery::printheaders()
 {
-    return std::string("hostname,SCSI Bus Number (HBA),LUN Name,Hitachi Product,Hitachi Vantara Product,Product Revision,Serial Number,Port,LUN 0-255,LDEV,Nickname,LDEV type")
-           + std::string(",notes")
-           + std::string(",RAID level,Parity Group,Pool ID,CLPR,Max LBA")
+    return std::string("Hostname,SCSI Bus Number (HBA),LUN Name,Hitachi Product,Hitachi Vantara Product,Product Revision,Serial Number,Port,LUN 0-255,LDEV,Nickname,LDEV Type")
+           + std::string(",Notes")
+           + std::string(",RAID Level,Parity Group,Pool ID,CLPR,Max LBA")
            + std::string(",Size MB,Size MiB,Size GB,Size GiB,Size TB,Size TiB")
-           + std::string(",Vendor,Product,Product Revision,port_wwn,node_wwn,protect")
-           + std::string(",SSID,CU,consistency_group")
+           + std::string(",Vendor,Product,Product Revision,Port WWN,Node WWN,Protect")
+           + std::string(",SSID,CU,Consistency Group")
            + std::string(",TC")
            + std::string(",MRCF MUN 0,MRCF MUN 1,MRCF MUN 2")
            + std::string(",HORC MUN 0,HORC MUN 1,HORC MUN 2,HORC MUN 3")
-           + std::string(",HUVM role,physical product,physical product revision,physical product ID,physical submodel,physical serial,physical LDEV,physical LDEV type"
-            ",physical PG,physical RAID level,physical Pool ID,physical nickname,physical SSID,physical CU,physical consistency group"
-            ",GAD remote serial,GAD remote LDEV"
-            ",write same,page size sectors,zero reclaim starting sector"
-            ",pages in use,pool threshold,available threshold"
-            ",pool usage,pool remaining MiB,total pool MiB,optimal write same granularity sectors"
-            ",physical pool usage,pool saving rate,pool physical remaining MiB,pool total physical MiB")
+           + std::string(",HUVM Role,Physical Product,Physical Product Revision,Physical Product ID,Physical Sub-model,Physical Serial,Physical LDEV,Physical LDEV Type"
+            ",Physical PG,Physical RAID Level,Physical Pool ID,Physical Nickname,Physical SSID,Physical CU,Physical Consistency Group"
+            ",GAD Remote Serial,GAD Remote LDEV"
+            ",Write Same,Page Size Sectors,Zero Reclaim Starting Sector"
+            ",Pages In Use,Pool Threshold,Available Threshold"
+            ",Pool Usage,Pool Remaining MiB,Total Pool MiB,Optimal Write Same Granularity (Sectors)"
+            ",Physical Pool Usage,Pool Saving Rate,Pool Physical Remaining MiB,Pool Total Physical MiB")
            + std::string(",SCSI IOCTL PROBE HOST");
 }
 
