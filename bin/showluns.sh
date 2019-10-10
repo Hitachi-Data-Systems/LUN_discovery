@@ -1,8 +1,8 @@
 #!/bin/bash
 
-{
-	export PATH=$PATH:`dirname "$0"`
+export PATH=$PATH:`dirname "$0"`
 
+{
 	InquireAboutHeaders
 
 	for D in $(find /dev -mindepth 1 -maxdepth 1 | grep "/dev/sd[[:alpha:]]\+$") ; do

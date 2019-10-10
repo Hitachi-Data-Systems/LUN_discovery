@@ -669,12 +669,12 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 switch (E0_buf.sub_model_ID)
                 {
                     case 0x00:
-                        HitachiProduct = "Jupiter"; // will become "RAID900";
-                        HVProduct = "Europa"; // "VSP 5100 / VSP 5500"
+                        HitachiProduct = "RAID900";
+                        HVProduct = "VSP 5100";
                         break;
                     case 0x01:
-                        HitachiProduct = "Jupiter"; // will become"RAID900";
-                        HVProduct = "Ganymede"; // Don't know Hitachi Vantara name yet
+                        HitachiProduct = "RAID900";
+                        HVProduct = "VSP 5500";
                         break;
                     default:
                     {
@@ -872,7 +872,7 @@ LUN_discovery::LUN_discovery( std::string L) : LUNname(L)
                 break;
             case 0x12:
                 LDEV_type="DP-Vol";
-                RAIDlevel="DP-Vol";
+                RAIDlevel="";
                 pgstr << ((((int)def_buf[96]) << 8) + ((int)def_buf[97]));
                 poolID = pgstr.str();
 
